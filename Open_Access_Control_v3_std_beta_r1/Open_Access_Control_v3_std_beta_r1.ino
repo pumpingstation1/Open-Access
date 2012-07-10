@@ -457,10 +457,10 @@ lcdStatus(2,door2Locked);
   }
 
 
-
+//Serial.println("DEBUG Reader2 setup");
   
   if(reader2Count >= 26){                                // Tag presented to reader 2
-    logger.l1 = 1;
+    logger.l1 = 2;
     logger.l2 = 1;
     logAccess(logger,reader2);                            // Write log entry to serial port
     chirpAlarm(1);                                       // Chirp alarm to show that tag input done              
@@ -514,7 +514,7 @@ lcdStatus(2,door2Locked);
     }
     
     default:  
-    {            
+    {           
          logger.l1 = 2;
 		 logger.l2 = 2;
 		 logAccess(logger,reader2);           // Log
@@ -523,6 +523,9 @@ lcdStatus(2,door2Locked);
          door2locktimer=millis();
          doorUnlock(2);                          // Unlock the door.
          keypadGranted=1;
+Serial.println("DEBUG Reader2 - accepted");
+Serial.print("DEBUG keypadGranted is ");
+Serial.println(keypadGranted);
          break;
     }
                  }                                      
@@ -545,17 +548,23 @@ lcdStatus(2,door2Locked);
 		logger.l1 = 2;
 		logger.l2 = 3;                                
 		logAccess(logger,reader2);                 //  no tickee, no laundree
+Serial.println("DEBUG Reader2 - something wrong");
 
           }
     }
-    
+
+Serial.println("DEBUG Reader2 read - reset for next scan");
+
     wiegand26.initReaderTwo();                   //  Reset for next tag scan
     unsigned long keypadTime=0;                  //  Timeout counter for  reader with key pad
     long keypadValue=0;
     keypadTime=millis();  
-                                         
+
+Serial.println("DEBUG Reader2 prep for keypad");                                         
    if(keypadGranted==1) 
     {
+      
+Serial.println("DEBUG Reader2 accepting keypad");      
       while((millis() - keypadTime)  <=KEYPADTIMEOUT){
 
                                                               // If access granted, open 5 second window for pin pad commands.
@@ -569,7 +578,7 @@ lcdStatus(2,door2Locked);
               keypadValue = keypadValue <<4;
               keypadValue |= reader2;               
             }
-            wiegand26.initReaderTwo();                         //Reset reader one and move on.
+            wiegand26.initReaderTwo();                         //Reset reader two and move on.
           } 
           else break;
 
@@ -582,7 +591,7 @@ lcdStatus(2,door2Locked);
         runCommand(keypadValue);                              // Run any commands entered at the keypads.
         wiegand26.initReaderTwo();
       
-
+Serial.println("DEBUG Reader2 end keypad");
    }
     wiegand26.initReaderTwo();                    
   } 
@@ -1064,6 +1073,10 @@ void lockall() {                      //Lock down all doors. Can also be run per
   door1Locked=true;
   door2Locked=true;
   PROGMEMprintln(doorslockedMessage);
+  logger.l1 = 0;
+  logger.l2 = 1;
+  logger.l3 = 3;
+  logDoor(logger);
 
 }
 

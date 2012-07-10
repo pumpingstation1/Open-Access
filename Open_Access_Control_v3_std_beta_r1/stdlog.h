@@ -154,7 +154,7 @@ void logDoor(logStruct logcode) {
  * 	l3 further explaination of action
  */
 	Serial.print("<door> DOOR"); 						
-	Serial.print(logcode.l1);							
+        Serial.print(logcode.l1);		
 	Serial.print(" ");
 
 	switch(logcode.l2) {							
@@ -172,6 +172,9 @@ void logDoor(logStruct logcode) {
 					Serial.print(logcode.detail);
 					Serial.println(" hours.");
 					break;
+                                case 3:
+                                        Serial.println(" All Doors relocked");
+                                        break;
 				default:
 					logError(logcode);
 					break;
