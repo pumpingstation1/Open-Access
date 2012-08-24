@@ -38,7 +38,7 @@ const long  superUserList[] = { gonzo, snake, satan};  // Super user table (cann
 
 #define PRIVPASSWORD 0x1234             // Console "priveleged mode" password
 
-#define DOORDELAY 5000                  // How long to open door lock once access is granted. (2500 = 2.5s)
+#define DOORDELAY 500                  // How long to open door lock once access is granted. (2500 = 2.5s)
 #define SENSORTHRESHOLD 100             // Analog sensor change that will trigger an alarm (0..255)
 #define KEYPADTIMEOUT 5000              // Timeout for pin pad entry. Users on keypads can enter commands after reader swipe.
 
