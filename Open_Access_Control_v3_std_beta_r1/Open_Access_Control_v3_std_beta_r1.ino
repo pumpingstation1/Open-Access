@@ -485,7 +485,8 @@ lcdStatus(2,door2Locked);
     logger.l1 = 2;
     logger.l2 = 2;
     logAccess(logger,reader2);
-    runCommand(0x2);
+    //runCommand(0x2);
+    
     break;
     }
     
@@ -520,8 +521,8 @@ lcdStatus(2,door2Locked);
 		 logAccess(logger,reader2);           // Log
          alarmState(0);
          armAlarm(0);                            //  Deactivate Alarm                          
-         door2locktimer=millis();
-         doorUnlock(2);                          // Unlock the door.
+         door1locktimer=millis();
+         doorUnlock(1);                          // Unlock the door.
          keypadGranted=1;
 Serial.println("DEBUG Reader2 - accepted");
 Serial.print("DEBUG keypadGranted is ");
