@@ -23,9 +23,7 @@
                                         // Library is from the TC4 Coffee Roaster project
                                         // Download here: http://code.google.com/p/tc4-shield/
                                         
-#define STDLOG
-//#define RHYSLOG					    // Choose logging backend.
-										// RHYSLOG is supposed to be an easy parsing output.
+#define STDLOG				// Change the logging header file to change logging output.
                  
 #define DEBUG 2                         // Set to 2 for display of raw tag numbers in log files, 1 for only denied, 0 for never.               
 #define VERSION 1.34
