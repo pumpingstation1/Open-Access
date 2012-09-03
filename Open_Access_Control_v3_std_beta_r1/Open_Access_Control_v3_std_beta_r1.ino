@@ -463,9 +463,6 @@ void loop()                                     // Main branch, runs over and ov
 
   }
 
-
-  //Serial.println("DEBUG Reader2 setup");
-
   if(reader2Count >= 26){                                // Tag presented to reader 2
     logger.l1 = 2;
     logger.l2 = 1;
@@ -531,8 +528,6 @@ void loop()                                     // Main branch, runs over and ov
           door1locktimer=millis();
           doorUnlock(1);                          // Unlock the door.
           keypadGranted=1;
-          Serial.println("DEBUG Reader2 - accepted");
-          Serial.print("DEBUG keypadGranted is ");
           Serial.println(keypadGranted);
           break;
         }
@@ -556,23 +551,18 @@ void loop()                                     // Main branch, runs over and ov
         logger.l1 = 2;
         logger.l2 = 3;                                
         logAccess(logger,reader2);                 //  no tickee, no laundree
-        Serial.println("DEBUG Reader2 - something wrong");
 
       }
     }
-
-    Serial.println("DEBUG Reader2 read - reset for next scan");
 
     wiegand26.initReaderTwo();                   //  Reset for next tag scan
     unsigned long keypadTime=0;                  //  Timeout counter for  reader with key pad
     long keypadValue=0;
     keypadTime=millis();  
-
-    Serial.println("DEBUG Reader2 prep for keypad");                                         
+                                   
     if(keypadGranted==1) 
     {
 
-      Serial.println("DEBUG Reader2 accepting keypad");      
       while((millis() - keypadTime)  <=KEYPADTIMEOUT){
 
         // If access granted, open 5 second window for pin pad commands.
@@ -599,7 +589,6 @@ void loop()                                     // Main branch, runs over and ov
       runCommand(keypadValue);                              // Run any commands entered at the keypads.
       wiegand26.initReaderTwo();
 
-      Serial.println("DEBUG Reader2 end keypad");
     }
     wiegand26.initReaderTwo();                    
   } 
