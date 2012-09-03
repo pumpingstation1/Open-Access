@@ -278,7 +278,7 @@ void setup(){           // Runs once at Arduino boot-up
 
 
 
-  Serial.begin(UBAUDRATE);	               	       // Set up Serial output at 8,N,1,57600bps
+  Serial.begin(UBAUDRATE);                         // Set up Serial output at 8,N,1,57600bps
   logger.l1 = 1;
   logSystem(logger);
   chirpAlarm(1);                               // Chirp the alarm to show system ready.
@@ -308,7 +308,7 @@ void loop()                                     // Main branch, runs over and ov
 {                         
 
 
-  readCommand();                                 // Check for commands entered at serial console
+  serialConsole();                                 // Check for commands entered at serial console
 
 
   /* Check if doors are supposed to be locked and lock/unlock them 
@@ -474,8 +474,6 @@ void loop()                                     // Main branch, runs over and ov
           logger.l1 = 2;
           logger.l2 = 2;
           logAccess(logger,reader2);
-          //runCommand(0x2);
-
           break;
         }
 
@@ -513,7 +511,6 @@ void loop()                                     // Main branch, runs over and ov
           door1locktimer=millis();
           doorUnlock(1);                          // Unlock the door.
           keypadGranted=1;
-          Serial.println(keypadGranted);
           break;
         }
       }                                      
@@ -571,7 +568,6 @@ void loop()                                     // Main branch, runs over and ov
       logger.l1 = 2;
       logger.l2 = 4;
       logAccess(logger,keypadValue);
-      runCommand(keypadValue);                              // Run any commands entered at the keypads.
       wiegand26.initReaderTwo();
 
     }
@@ -1147,42 +1143,37 @@ void clearUsers()    //Erases all users from EEPROM
   }
 }
 
-void addUser(int userNum, uint8_t userMask, unsigned long tagNumber)       // Modifies a user an entry in the local database.
-{                                                                       // Users number 0..NUMUSERS
-  int offset = (EEPROM_FIRSTUSER+(userNum*5));                          // Find the offset to write this user to
-  uint8_t EEPROM_buffer[5] ={
-    0  };                                           // Buffer for creating the 4 byte values to write. Usermask is stored in byte 5.
+void addUser(int userNum, uint8_t userMask, unsigned long tagNumber) {
+/* Modifies a user an entry in the local database.
+ * Users number 0..NUMUSERS
+ * 
+ */
+ 
+    int offset = (EEPROM_FIRSTUSER+(userNum*5));                // Find the offset to write this user to
+    uint8_t EEPROM_buffer[5] = {
+    0  };                                                       // Buffer for creating the 4 byte values to write. Usermask is stored in byte 5.
 
-  if((userNum <0) || (userNum > NUMUSERS)) {                            // Do not write to invalid EEPROM addresses.
-
-    logger.l1 = 4;
-    logSystem(logger);
-  }
-  else
-  {
-
-
-
-
-    EEPROM_buffer[0] = uint8_t(tagNumber &  0xFFF);   // Fill the buffer with the values to write to bytes 0..4 
-    EEPROM_buffer[1] = uint8_t(tagNumber >> 8);
-    EEPROM_buffer[2] = uint8_t(tagNumber >> 16);
-    EEPROM_buffer[3] = uint8_t(tagNumber >> 24);
-    EEPROM_buffer[4] = uint8_t(userMask);
-
-
-
-    for(int i=0; i<5; i++){
-      EEPROM.write((offset+i), (EEPROM_buffer[i])); // Store the resulting value in 5 bytes of EEPROM.
-
+    if((userNum <0) || (userNum > NUMUSERS)) {                  // Do not write to invalid EEPROM addresses.
+        logger.l1 = 4;
+        logSystem(logger);
     }
+    else {
+        EEPROM_buffer[0] = uint8_t(tagNumber & 0xFFF);          // Fill the buffer with the values to write to bytes 0..4 
+        EEPROM_buffer[1] = uint8_t(tagNumber >> 8);
+        EEPROM_buffer[2] = uint8_t(tagNumber >> 16);
+        EEPROM_buffer[3] = uint8_t(tagNumber >> 24);
+        EEPROM_buffer[4] = uint8_t(userMask);
 
-    logger.l1 = 6;
-    logger.detail = userNum;
-    logSystem(logger);
+        for(int i=0; i<5; i++) {
+            EEPROM.write((offset+i), (EEPROM_buffer[i]));       // Store the resulting value in 5 bytes of EEPROM.
+            Serial.println(i);
+            Serial.println(EEPROM_buffer[i]);
+        }
 
-
-  }
+        logger.l1 = 6;
+        logger.detail = userNum;
+        logSystem(logger);
+    }
 }
 
 void deleteUser(int userNum)                                            // Deletes a user from the local database.
@@ -1255,51 +1246,40 @@ int checkUser(unsigned long tagNumber)                                  // Check
   return found;                        
 }
 
+void dumpUser(uint8_t usernum) {
+/* Return usermask and user tag on a particular entry in the local DB
+ * Users number 0..NUMUSERS
+ * 
+ */                                    
+    unsigned long EEPROM_buffer=0;                                  // Buffer for recreating tagNumber from the 4 stored bytes.
 
+    if((0<=usernum) && (usernum <= NUMUSERS-1)) {
 
+        int i=usernum*5+EEPROM_FIRSTUSER;
 
-
-void dumpUser(uint8_t usernum)                                            // Return information ona particular entry in the local DB
-{                                                                      // Users number 0..NUMUSERS
-
-
-  unsigned long EEPROM_buffer=0;                                       // Buffer for recreating tagNumber from the 4 stored bytes.
-
-
-  if((0<=usernum) && (usernum <=199)){
-
-    int i=usernum*5+EEPROM_FIRSTUSER; //29
-
-    EEPROM_buffer=0;
-    EEPROM_buffer=(EEPROM.read(i+3)); //32
-    EEPROM_buffer= EEPROM_buffer<<8;
-    EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i+2));
-    EEPROM_buffer= EEPROM_buffer<<8;
-    EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i+1));
-    EEPROM_buffer= EEPROM_buffer<<8;
-    EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i));
-
-
-
-    Serial.print(((i-EEPROM_FIRSTUSER)/5),DEC);
-    Serial.print("\t");
-    Serial.print(EEPROM.read(i+4),DEC);
-    Serial.print("\t");
-
-    if(DEBUG==2){
-      Serial.println(EEPROM_buffer,HEX);
+        EEPROM_buffer=0;
+        EEPROM_buffer=(EEPROM.read(i+3));
+        EEPROM_buffer= EEPROM_buffer<<8;
+        EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i+2));
+        EEPROM_buffer= EEPROM_buffer<<8;
+        EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i+1));
+        EEPROM_buffer= EEPROM_buffer<<8;
+        EEPROM_buffer=(EEPROM_buffer ^ EEPROM.read(i));
+        
+        Serial.print("{\"eeprom_pos\": ");
+        Serial.print(((i-EEPROM_FIRSTUSER)/5),DEC);
+        Serial.print(", \"user_mask\": ");
+        Serial.print(EEPROM.read(i+4),DEC);
+        Serial.print(", \"tag_value\": \"");
+        Serial.print(EEPROM_buffer,HEX);
+        Serial.print("\"}");
     }
     else {
-      if(EEPROM_buffer != 0xFFFFFFFF) {
-        Serial.print("********");
-      }
+        if(EEPROM_buffer != 0xFFFFFFFF) {
+            Serial.print("********");
+        }
+        Serial.println("Bad user number!");
     }
-
-
-
-
-  }
-  else Serial.println("Bad user number!");
 }
 
 
@@ -1307,269 +1287,233 @@ void dumpUser(uint8_t usernum)                                            // Ret
  * user management and other tasks
  */
 
-void readCommand() {                                               
+void serialConsole() {                                               
+
+    uint8_t stringSize=(sizeof(inString)/sizeof(char));                    
+    char cmdString[4][9];                                       // Size of commands (4=number of items to parse, 10 = max length of each)
 
 
-  uint8_t stringSize=(sizeof(inString)/sizeof(char));                    
-  char cmdString[4][9];                                             // Size of commands (4=number of items to parse, 10 = max length of each)
+    uint8_t j=0;                                                // Counters
+    uint8_t k=0;
+    char cmd=0;
 
 
-  uint8_t j=0;                                                          // Counters
-  uint8_t k=0;
-  char cmd=0;
+    char ch;
 
-
-  char ch;
-
-  if (Serial.available()) {                                       // Check if user entered a command this round	                                  
-    ch = Serial.read();                                            
-    if( ch == '\r' || inCount >=stringSize-1)  {                   // Check if this is the terminating carriage return
-      inString[inCount] = 0;
-      inCount=0;
-    }
-    else{
-      (inString[inCount++] = ch); 
-    }
-    //Serial.print(ch);                        // Turns echo on or off
-
-
-    if(inCount==0) {
-      for(uint8_t i=0;  i<stringSize; i++) {
-        cmdString[j][k] = inString[i];
-        if(k<9) k++;
-        else break;
-
-        if(inString[i] == ' ') // Check for space and if true, terminate string and move to next string.
-        {
-          cmdString[j][k-1]=0;
-          if(j<3)j++;
-          else break;
-          k=0;             
+    if (Serial.available()) {                                   // Check if user entered a command this round                                     
+        ch = Serial.read();                                            
+        if( ch == '\r' || inCount >=stringSize-1) {             // Check if this is the terminating carriage return
+            inString[inCount] = 0;
+            inCount=0;
         }
+        else {
+            (inString[inCount++] = ch); 
+        }
+        //Serial.print(ch);                                     // Turns echo on or off
 
-      }
-      cmd = cmdString[0][0];
 
-      switch(cmd) {
+        if(inCount==0) {
+            for(uint8_t i=0;  i<stringSize; i++) {
+                cmdString[j][k] = inString[i];
+                if(k<9) k++;
+                else break;
 
-
-      case 'e': 
-        {                                                 // Enable "privileged" commands at console
-
-            if((consoleFail>=5) && (millis()-consolefailTimer<300000))  // Do not allow priv mode if more than 5 failed logins in 5 minute
-          {  
-            PROGMEMprintln(privsAttemptsMessage);
-            break;
-          }
-          if (strtoul(cmdString[1],NULL,16) == PRIVPASSWORD)
-          {
-            consoleFail=0;                    
-            PROGMEMprintln(privsenabledMessage);
-            privmodeEnabled=true;
-          }
-          else {
-            PROGMEMprintln(privsdisabledMessage);
-            privmodeEnabled=false;                                          
-            if(consoleFail==0) {                                   // Set the timeout for failed logins
-              consolefailTimer=millis();
+                if(inString[i] == ' ') {                        // Check for space and if true, terminate string and move to next string.
+                    cmdString[j][k-1]=0;
+                    if(j<3)j++;
+                    else break;
+                    k=0;             
+                }
             }
-            consoleFail++;                                    // Increment the login failure counter
-          }
+            cmd = cmdString[0][0];
+            switch(cmd) {
+                case 'e': {                                     // Enable "privileged" commands at console  
+                    if((consoleFail>=5) && (millis()-consolefailTimer<300000)) {  // Do not allow priv mode if more than 5 failed logins in 5 minute  
+                        PROGMEMprintln(privsAttemptsMessage);
+                        break;
+                    }
+                    if (strtoul(cmdString[1],NULL,16) == PRIVPASSWORD) {
+                        consoleFail=0;                    
+                        PROGMEMprintln(privsenabledMessage);
+                        privmodeEnabled=true;
+                    }
+                    else {
+                        PROGMEMprintln(privsdisabledMessage);
+                        privmodeEnabled=false;                                          
+                        if(consoleFail==0) {                    // Set the timeout for failed logins
+                            consolefailTimer=millis();
+                        }
+                        consoleFail++;                          // Increment the login failure counter
+                    }
+                    break;
+                }
 
-          break;
+                //privmodeEnabled=true;                         // Debugging statement
 
-        }
+                case 'a': {                                     // List whole user database
+                    if(privmodeEnabled==true) {
+						Serial.print('[');                 
+                        for(int i=0; i<(NUMUSERS); i++) {
+                            dumpUser(i);
+                            if(i+1 != NUMUSERS) {				// Put in commas, but no trailing comma.
+								Serial.println(", ");
+							}
+                        }
+                        Serial.println(']');
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;
+                }
 
-        //privmodeEnabled=true;            //Debugging statement
+                case 's': {                                     // List user 
+                    if(privmodeEnabled==true) {
+                        dumpUser(atoi(cmdString[1]));
+                        Serial.println();
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;
+                }
 
+                case 'd': {                                     // Display current time
+                    Serial.println();
+                    break;
+                }
 
-      case 'a': 
-        {                                                 // List whole user database
-          if(privmodeEnabled==true) {                 
-            Serial.println("User dump started.");
-            Serial.print("UserNum:");
-            Serial.print(" ");
-            Serial.print("Usermask:");
-            Serial.print(" ");
-            Serial.println("TagNum:");
+                case '1': {                                     // Deactivate alarm                                       
+                    if(privmodeEnabled==true) {
+                        armAlarm(0);
+                        alarmState(0);
+                        chirpAlarm(1);  
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;
+                }
+                
+                case '2': {                                     // Activate alarm with delay.
+                    chirpAlarm(20);                             // 200 chirps = ~30 seconds delay
+                    armAlarm(1);                           
+                    break; 
+                } 
 
-            for(int i=0; i<(NUMUSERS); i++){
-              dumpUser(i);
-              Serial.println();
-            }
-          }
-          else{
-            logprivFail();
-          }
-          break;
-        }
+                case 'u': {
+                    if(privmodeEnabled==true) {
+                        alarmState(0);                          // Set to door chime only/open doors                                                          
+                        armAlarm(4);
+                        doorUnlock(1);
+                        doorUnlock(2);
+                        door1Locked=false;
+                        door2Locked=false;
+                        chirpAlarm(3);   
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;  
+                }
+                
+                case 'l': {                                      // Lock all doors          
+                    lockall();
+                    chirpAlarm(1);   
+                    break;  
+                }                            
 
-      case 's': 
-        {                                                 // List user 
-          if(privmodeEnabled==true) {
-            Serial.print("UserNum:");
-            Serial.print(" ");
-            Serial.print("Usermask:");
-            Serial.print(" ");
-            Serial.println("TagNum:");
-            dumpUser(atoi(cmdString[1]));
-            Serial.println();
-          }
-          else{
-            logprivFail();
-          }
-          break;
-        }
+                case '3': {                                      // Train alarm sensors
+                    if(privmodeEnabled==true) {
+                        trainAlarm();
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;
+                    }
+                case '9': {                                            // Show site status
+                    PROGMEMprint(statusMessage1);
+                    Serial.println(alarmArmed,DEC);
+                    PROGMEMprint(statusMessage2);
+                    Serial.println(alarmActivated,DEC);
+                    PROGMEMprint(statusMessage3);
+                    Serial.println(pollAlarm(3),DEC);
+                    PROGMEMprint(statusMessage4);
+                    Serial.println(pollAlarm(2),DEC);                  
+                    PROGMEMprint(statusMessage5); 
+                    Serial.println(door1Locked);                    
+                    PROGMEMprint(statusMessage6); 
+                    Serial.println(door2Locked); 
+                    break;
+                }
 
-      case 'd': 
-        {                                                 // Display current time
-          Serial.println();
-          break;
-        }
+                case 'o': {  
+                    if(privmodeEnabled==true) {
+                        if(atoi(cmdString[1]) == 1) {                                     
+                            alarmState(0);                         // Set to door chime only/open doors                                                          
+                            armAlarm(4);
+                            doorUnlock(1);                                       // Open the door specified
+                            door1locktimer=millis();
+                            break;
+                        }                    
+                        if(atoi(cmdString[1]) == 2) {  
+                            alarmState(0);                                       // Set to door chime only/open doors                                                          
 
-      case '1': 
-        {                                               // Deactivate alarm                                       
-          if(privmodeEnabled==true) {
-            armAlarm(0);
-            alarmState(0);
-            chirpAlarm(1);  
-          }
-          else{
-            logprivFail();
-          }
-          break;
-        }
-      case '2': 
-        {                                               // Activate alarm with delay.
-          chirpAlarm(20);                                          // 200 chirps = ~30 seconds delay
-          armAlarm(1);                           
-          break; 
-        } 
+                            armAlarm(4);
+                            doorUnlock(2);                                        
+                            door2locktimer=millis();
+                            break;               
+                        }
+                        Serial.print("Invalid door number!");
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break;
+                } 
 
-      case 'u': 
-        {
-          if(privmodeEnabled==true) {
-            alarmState(0);                                       // Set to door chime only/open doors                                                          
+                case 'r': {                                                 // Remove a user
+                    if(privmodeEnabled==true) {
+                        dumpUser(atoi(cmdString[1]));
+                        Serial.println();
+                        deleteUser(atoi(cmdString[1]));
+                    }
+                    else {
+                        logprivFail();
+                    }
+                    break; 
+                }              
 
-            armAlarm(4);
-            doorUnlock(1);
-            doorUnlock(2);
-            door1Locked=false;
-            door2Locked=false;
-            chirpAlarm(3);   
-          }
+                case 'm': {                                                                // Add/change a user                   
+                    if(privmodeEnabled==true) {
+                        dumpUser(atoi(cmdString[1]));
+                        addUser(atoi(cmdString[1]), atoi(cmdString[2]), strtoul(cmdString[3],NULL,16));                
+                        dumpUser(atoi(cmdString[1]));
+                    }
+                    else {
+                        logprivFail();
+                    }                                    
+                    break;
+                }
 
-          else{
-            logprivFail();
-          }
-          break;  
-        }
-      case 'l': 
-        {                                             // Lock all doors          
-          lockall();
-          chirpAlarm(1);   
-          break;  
-        }                            
+                case '?': {                                                  // Display help menu
+                    PROGMEMprintln(consolehelpMessage1);
+                    PROGMEMprintln(consolehelpMessage2);
+                    PROGMEMprintln(consolehelpMessage3);
+                    PROGMEMprintln(consolehelpMessage4);
+                    PROGMEMprintln(consolehelpMessage5);                     
+                    PROGMEMprintln(consolehelpMessage6);                  
+                    break;
+				}
 
-      case '3': 
-        {                                            // Train alarm sensors
-          if(privmodeEnabled==true) {
-            trainAlarm();
-          }
-          else{
-            logprivFail();
-          }
-          break;
-        }
-      case '9': 
-        {                                            // Show site status
-          PROGMEMprint(statusMessage1);
-          Serial.println(alarmArmed,DEC);
-          PROGMEMprint(statusMessage2);
-          Serial.println(alarmActivated,DEC);
-          PROGMEMprint(statusMessage3);
-          Serial.println(pollAlarm(3),DEC);
-          PROGMEMprint(statusMessage4);
-          Serial.println(pollAlarm(2),DEC);                  
-          PROGMEMprint(statusMessage5); 
-          Serial.println(door1Locked);                    
-          PROGMEMprint(statusMessage6); 
-          Serial.println(door2Locked); 
-          break;
-        }
-
-      case 'o': 
-        {  
-          if(privmodeEnabled==true) {
-            if(atoi(cmdString[1]) == 1){                                     
-              alarmState(0);                                       // Set to door chime only/open doors                                                          
-
-              armAlarm(4);
-              doorUnlock(1);                                       // Open the door specified
-              door1locktimer=millis();
-              break;
-            }                    
-            if(atoi(cmdString[1]) == 2){  
-              alarmState(0);                                       // Set to door chime only/open doors                                                          
-
-              armAlarm(4);
-              doorUnlock(2);                                        
-              door2locktimer=millis();
-              break;               
-            }
-            Serial.print("Invalid door number!");
-          }
-
-          else{
-            logprivFail();
-          }
-          break;
-        } 
-
-      case 'r': 
-        {                                                 // Remove a user
-          if(privmodeEnabled==true) {
-            dumpUser(atoi(cmdString[1]));
-            deleteUser(atoi(cmdString[1]));
-          }
-          else{
-            logprivFail();
-          }
-          break; 
-        }              
-
-      case 'm': 
-        {                                                                // Add/change a user                   
-          if(privmodeEnabled==true) {
-            dumpUser(atoi(cmdString[1]));
-            addUser(atoi(cmdString[1]), atoi(cmdString[2]), strtoul(cmdString[3],NULL,16));                
-            dumpUser(atoi(cmdString[1]));
-          }
-          else{
-            logprivFail();
-          }                                    
-
-          break;
-        }
-
-      case '?': 
-        {                                                  // Display help menu
-          PROGMEMprintln(consolehelpMessage1);
-          PROGMEMprintln(consolehelpMessage2);
-          PROGMEMprintln(consolehelpMessage3);
-          PROGMEMprintln(consolehelpMessage4);
-          PROGMEMprintln(consolehelpMessage5);                     
-          PROGMEMprintln(consolehelpMessage6);                  
-          break;
-        }
-
-      default:  
-        PROGMEMprintln(consoledefaultMessage);
-        break;
-      }  
-
-    }                                    // End of 'if' statement for Serial.available
-  }                                     // End of 'if' for string finished
+				default: {
+					PROGMEMprintln(consoledefaultMessage);
+					break;
+				}
+			}
+		}                                    // End of 'if' statement for Serial.available
+	}                                     // End of 'if' for string finished
 }                                      // End of function 
 
 
