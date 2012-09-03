@@ -222,7 +222,7 @@ logStruct logger = {
 
 void setup(){           // Runs once at Arduino boot-up
 
-    Wire.begin();   // start Wire library as I2C-Bus Master
+  Wire.begin();   // start Wire library as I2C-Bus Master
   mcp.begin();      // use default address 0
 
   pinMode(2,INPUT);                // Initialize the Arduino built-in pins
@@ -349,21 +349,6 @@ void loop()                                     // Main branch, runs over and ov
   lcdStatus(1,door1Locked);
   lcdStatus(2,door2Locked);
 #endif
-
-  /*  Set optional "failsafe" time to lock up every night.
-   */
-
-  ds1307.getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);   // Get the current date/time
-
-  if(hour==23 && minute==59 && door1Locked==false){
-    doorLock(1);
-    door1Locked==true;      
-    logger.l1 = 1;
-    logger.l2 = 1;
-    logger.l3 = 2;
-    logger.detail = 2359;
-    logDoor(logger);
-  }
 
   // Notes: RFID polling is interrupt driven, just test for the reader1Count value to climb to the bit length of the key
   // change reader1Count & reader1 et. al. to arrays for loop handling of multiple reader output events
