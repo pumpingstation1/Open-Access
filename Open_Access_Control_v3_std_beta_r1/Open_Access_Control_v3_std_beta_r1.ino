@@ -1166,8 +1166,6 @@ void addUser(int userNum, uint8_t userMask, unsigned long tagNumber) {
 
         for(int i=0; i<5; i++) {
             EEPROM.write((offset+i), (EEPROM_buffer[i]));       // Store the resulting value in 5 bytes of EEPROM.
-            Serial.println(i);
-            Serial.println(EEPROM_buffer[i]);
         }
 
         logger.l1 = 6;
@@ -1206,8 +1204,6 @@ void deleteUser(int userNum)                                            // Delet
 
 }
 
-
-
 int checkUser(unsigned long tagNumber)                                  // Check if a particular tag exists in the local database. Returns userMask if found.
 {                                                                       // Users number 0..NUMUSERS
   // Find the first offset to check
@@ -1238,8 +1234,7 @@ int checkUser(unsigned long tagNumber)                                  // Check
 
   }
   logger.l1 = 9;
-  logger.detail = 999;
-  dumpUser(tagNumber);
+  logger.detail = tagNumber;
 
   logSystem(logger);
   delay(1000);                                                            // Delay to prevent brute-force attacks on reader
@@ -1475,8 +1470,6 @@ void serialConsole() {
 
                 case 'r': {                                                 // Remove a user
                     if(privmodeEnabled==true) {
-                        dumpUser(atoi(cmdString[1]));
-                        Serial.println();
                         deleteUser(atoi(cmdString[1]));
                     }
                     else {
@@ -1487,9 +1480,7 @@ void serialConsole() {
 
                 case 'm': {                                                                // Add/change a user                   
                     if(privmodeEnabled==true) {
-                        dumpUser(atoi(cmdString[1]));
                         addUser(atoi(cmdString[1]), atoi(cmdString[2]), strtoul(cmdString[3],NULL,16));                
-                        dumpUser(atoi(cmdString[1]));
                     }
                     else {
                         logprivFail();
@@ -1522,23 +1513,23 @@ void serialConsole() {
 /* Wrapper functions for interrupt attachment
  Could be cleaned up in library?
  */
-void callReader1Zero(){
-  wiegand26.reader1Zero();
+void callReader1Zero() {
+	wiegand26.reader1Zero();
 }
-void callReader1One(){
-  wiegand26.reader1One();
+void callReader1One() {
+	wiegand26.reader1One();
 }
-void callReader2Zero(){
-  wiegand26.reader2Zero();
+void callReader2Zero() {
+	wiegand26.reader2Zero();
 }
-void callReader2One(){
-  wiegand26.reader2One();
+void callReader2One() {
+	wiegand26.reader2One();
 }
-void callReader3Zero(){
-  wiegand26.reader3Zero();
+void callReader3Zero() {
+	wiegand26.reader3Zero();
 }
-void callReader3One(){
-  wiegand26.reader3One();
+void callReader3One() {
+	wiegand26.reader3One();
 }
 
 

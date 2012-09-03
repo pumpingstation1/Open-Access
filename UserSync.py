@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  untitled.py
+#  UserSync.py
 #  
 #  Copyright 2012 Rhys Rhaven <rhys@rhavenindustrys.com>
 #  
@@ -23,34 +23,55 @@
 
 import json
 import serial
+import string
 from pprint import pprint
 
+dump_size = 200									# Number of lines output by the userdump
+serial_port_speed = 57600						# Speed of the Arduino serial connection
+console_password = "1234"						# Password to enable privledged mode on the console
+
 def main():
+
+	user_list_file = open("userList.json", "rt")			# Load File Database
+	user_list = json.load(user_list_file)				
 	
-	# Write a file
-	user_list_file = open("userList.json", "rt")
-	user_list = json.load(user_list_file)
+	user_list_embed = getUserList('/dev/ttyUSB0')			# Load Actual Database
 	
-	# pprint(userList[0])
-	sport = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
-	dump_list = list()
+	tag_dict = {}											# Create a dictionary from the actual database
+	for item in user_list_embed:							# So we can lookup entries based on the info in the file db
+		tag_dict[item['tag_value']] = item['eeprom_pos']	# We don't want to store eeprom position in the file db
+		
+	print tag_dict
+	return 0
 	
-	sport.write("a\r")
+def getUserList(serial_port):
+# Opens serial port to Open Access Controller
+# Gets embedded user db, converts to JSON object
+# Returns JSON Object
+	
+	s_port = serial.Serial(serial_port, serial_port_speed, timeout=1)
 	json_dump = ""
+	dump_list = []
+	
+	s_port.write("e " + console_password + "\r")
+	if s_port.readline() == "Privileged mode enabled.":
+		print "Console password incorrect, exiting."
+		exit(1)
+	
+	s_port.write("a\r")
+	
 	while True:
-		dump_list.append(sport.readline())
-		if len(dump_list) == 200:
+		dump_list.append(s_port.readline())
+		if len(dump_list) >= dump_size:
 			break
 	
 	for item in dump_list:
 		json_dump += item.rstrip()
 	
-	#print json_dump	
 	json_dump_parsed = json.loads(json_dump)
-	pprint(json_dump_parsed)
-	#print json.dumps(user_list)
 	
-	return 0
+	return json_dump_parsed
+	
 
 if __name__ == '__main__':
 	main()
