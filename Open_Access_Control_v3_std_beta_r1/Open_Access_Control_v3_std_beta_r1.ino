@@ -1386,6 +1386,7 @@ void dumpUser(uint8_t usernum)                                            // Ret
 
 
 
+    Serial.print("<user_dump> ");
     Serial.print(((i-EEPROM_FIRSTUSER)/5),DEC);
     Serial.print("\t");
     Serial.print(EEPROM.read(i+4),DEC);
