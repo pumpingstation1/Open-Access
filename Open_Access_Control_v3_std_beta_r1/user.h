@@ -29,10 +29,11 @@
 #define VERSION 1.34
 #define UBAUDRATE 57600                 // Set the baud rate for the USB serial port
 
-#define gonzo   0x1234                  // Name and badge number in HEX. We are not using checksums or site ID, just the whole
-#define snake   0x1234                  // output string from the reader.
-#define satan   0x1234
-const long  superUserList[] = { gonzo, snake, satan};  // Super user table (cannot be changed by software)
+#define josh   0xDA28AA                  // Name and badge number in HEX. We are not using checksums or site ID, just the whole
+#define rhys   0x1234                  // output string from the reader.
+#define eric   0xD621AC
+#define tim    0x1234
+const long  superUserList[] = { josh, rhys, eric, tim };  // Super user table (cannot be changed by software)
 
 #define PRIVPASSWORD 0x1234             // Console "priveleged mode" password
 

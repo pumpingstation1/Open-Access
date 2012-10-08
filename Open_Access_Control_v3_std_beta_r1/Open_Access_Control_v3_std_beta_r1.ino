@@ -1572,7 +1572,11 @@ if(inCount==0) {
                     PROGMEMprint(statusMessage3);
                     Serial.println(pollAlarm(3),DEC);
                     PROGMEMprint(statusMessage4);
-                    Serial.println(pollAlarm(2),DEC);                  
+                    Serial.println(pollAlarm(2),DEC);
+                    PROGMEMprint(statusMessage8);
+                    Serial.println(pollAlarm(1),DEC);
+                    PROGMEMprint(statusMessage7);
+                    Serial.println(pollAlarm(0),DEC);
                     PROGMEMprint(statusMessage5); 
                     Serial.println(door1Locked);                    
                     PROGMEMprint(statusMessage6); 

@@ -20,11 +20,12 @@ const prog_uchar consoledefaultMessage[]  PROGMEM  = {"Invalid command. Press '?
 
 const prog_uchar statusMessage1[]         PROGMEM  = {"Alarm armed state (1=armed):"};
 const prog_uchar statusMessage2[]         PROGMEM  = {"Alarm siren state (1=activated):"};
-const prog_uchar statusMessage3[]         PROGMEM  = {"Front door open state (0=closed):"};
-const prog_uchar statusMessage4[]         PROGMEM  = {"Roll up door open state (0=closed):"};     
+const prog_uchar statusMessage3[]         PROGMEM  = {"Server/Locker door open state (0=closed):"};
+const prog_uchar statusMessage4[]         PROGMEM  = {"Front door open state (0=closed):"};
 const prog_uchar statusMessage5[]         PROGMEM  = {"Door 1 unlocked state(1=locked):"};                   
 const prog_uchar statusMessage6[]         PROGMEM  = {"Door 2 unlocked state(1=locked):"};
-
+const prog_uchar statusMessage7[]         PROGMEM  = {"Front KEYED door open state (0=closed):"};
+const prog_uchar statusMessage8[]         PROGMEM  = {"Back door open state (0 = closed):"};
 
 typedef struct {
 	byte l1;
