@@ -35,6 +35,15 @@ typedef struct {
         uint8_t detail;
 } logStruct;
 
+typedef struct {
+  long current_tag;
+  int current_door;
+  int current_reader;
+  int current_user;
+  int current_usermask;
+  String event_from;     // Valid values are ["USER", "SYSTEM", "COMMAND", "TIMER"]
+} logStateStruct;
+
 void PROGMEMprintln(const prog_uchar str[])    // Function to retrieve logging strings from program memory
 {                                              // Prints newline after each string  
   char c;
@@ -146,7 +155,7 @@ void logAlarm(logStruct logcode) {
 	}
 }
 
-void logDoor(logStruct logcode) {
+void logDoor(logStruct logcode, logStateStruct log_state=(logStateStruct){ NULL, NULL, NULL, NULL, NULL, NULL }) {
 /*  Converts numeric log code to heiarchial log format.
  *  DOOR Events
  *  logStruct use. 
@@ -183,7 +192,13 @@ void logDoor(logStruct logcode) {
 			}				
 			break;
 		case 2:
-			Serial.println("Unlocked.");
+			Serial.print("Unlocked ");
+      Serial.print(log_state.current_tag, HEX);
+      Serial.print(" ");
+      Serial.print(log_state.current_usermask, DEC);
+      Serial.print(" ");
+      Serial.print(log_state.current_reader, DEC);
+      Serial.println("");
 			break;
 		default:
 			logError(logcode);
