@@ -315,6 +315,13 @@ mcp.digitalWrite(STATUSLED, LOW);           // Turn the status LED green
 void loop()                                     // Main branch, runs over and over again
 {                         
 
+  if(pollAlarm(1)){
+    mcp.digitalWrite(ALARMSTROBEPIN, HIGH);
+  }
+  else{
+    mcp.digitalWrite(ALARMSTROBEPIN, LOW);
+  }
+  
 
 readCommand();                                 // Check for commands entered at serial console
 
@@ -1064,7 +1071,7 @@ uint8_t dpLED=1;
   mcp.digitalWrite(dpLED, HIGH);
   logger.l1 = input;
   logger.l2 = 2;
-  logDoor(logger, logger_state[input-1]);
+  logDoor(logger, logger_state[1]);
   
 #ifdef LCDBOARD
   lcdStatus(input, false);
