@@ -11,13 +11,13 @@
 
 #define MCPIOXP        // this if using the v3 hardware with the MCP23017 i2c IO chip
 //#define AT24EEPROM     // Set this if you have the At24C i2c EEPROM chip installed
-#define LCDBOARD       // Set this if using an LCD. Default is 16x2 with controller.
+//#define LCDBOARD       // Set this if using an LCD. Default is 16x2 with controller.
 
 
 
 /* Static user List - Implemented as an array for testing and access override 
 */                               
-#define LCDBOARD                        // Uncomment to use LCD board
+//#define LCDBOARD                        // Uncomment to use LCD board
                                         // Uses the "cLCD" library that extends arduino LCD class
                                         // Has issues - must use a non-standard pinout, disables other MCP IO pins
                                         // Library is from the TC4 Coffee Roaster project
@@ -33,6 +33,7 @@
 #define rhys   0x25AEBC6                  // output string from the reader.
 #define eric   0xD621AC
 #define tim    0x14F0C85
+
 const long  superUserList[] = { josh, rhys, eric, tim };  // Super user table (cannot be changed by software)
 
 #define PRIVPASSWORD 0x1234             // Console "priveleged mode" password

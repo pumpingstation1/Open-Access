@@ -109,7 +109,6 @@
 #define EEPROM_LASTUSER 1024
 #define NUMUSERS  ((EEPROM_LASTUSER - EEPROM_FIRSTUSER)/5)  //Define number of internal users (200 for UNO/Duemillanova)
 
-
 #ifdef HWV3STD                          // Use these pinouts for the v3 Standard hardware
 #define DOORPIN1       7                // Define the pin for electrified door 1 hardware. D7=first relay
 #define DOORPIN2       8                // Define the pin for electrified door 2 hardware  D8=second relay
@@ -154,6 +153,7 @@ unsigned long door2locktimer=0;                 // after access granted.
 unsigned long alarmDelay=0;                     // Keep track of alarm delay. Used for "delayed activation" or level 2 alarm.
 unsigned long alarmSirenTimer=0;                // Keep track of how long alarm has gone off
 unsigned long consolefailTimer=0;               // Console password timer for failed logins
+// TODO: up sensorDelay to 4 to accomidate all sensors and make it work corectly
 unsigned long sensorDelay[2]={0};               // Used with sensor[] above, but sets a timer for 2 of them. Useful for logging
                                                 // motion detector hits for "occupancy check" functions.
 
@@ -212,11 +212,26 @@ cLCD lcd;
 #endif
 
 logStruct logger = { 255, 255, 255, 255, 255 }; // keep a 5 byte logger struct in global memory
+logStateStruct logger_state[2]; // keeps state from everything, everywhere for better logs
+
+void setDefaultLoggerState(logStateStruct& l)
+{
+  l.current_tag = NULL;
+  l.current_door = NULL;
+  l.current_reader = NULL;
+  l.current_user = NULL;
+  l.current_usermask = NULL;
+  l.event_from = NULL;
+}
 
 void setup(){           // Runs once at Arduino boot-up
 
+
   Wire.begin();   // start Wire library as I2C-Bus Master
   mcp.begin();      // use default address 0
+
+  setDefaultLoggerState(logger_state[0]);
+  setDefaultLoggerState(logger_state[1]);
 
   pinMode(2,INPUT);                // Initialize the Arduino built-in pins
   pinMode(3,INPUT);
@@ -300,6 +315,13 @@ mcp.digitalWrite(STATUSLED, LOW);           // Turn the status LED green
 void loop()                                     // Main branch, runs over and over again
 {                         
 
+  if(pollAlarm(1)){
+    mcp.digitalWrite(ALARMSTROBEPIN, HIGH);
+  }
+  else{
+    mcp.digitalWrite(ALARMSTROBEPIN, LOW);
+  }
+  
 
 readCommand();                                 // Check for commands entered at serial console
 
@@ -311,6 +333,7 @@ readCommand();                                 // Check for commands entered at 
   if(((millis() - door1locktimer) >= DOORDELAY) && (door1locktimer !=0))
   { 
     if(door1Locked==true){
+     logger_state[0].event_from = "SYS";
      doorLock(1);
      door1locktimer=0;    
 
@@ -328,6 +351,7 @@ readCommand();                                 // Check for commands entered at 
  if(((millis() - door2locktimer) >= DOORDELAY) && (door2locktimer !=0))
   { 
     if(door2Locked==true) {
+     logger_state[1].event_from = "SYS";
      doorLock(2); 
      door2locktimer=0;
                           }
@@ -349,6 +373,7 @@ lcdStatus(2,door2Locked);
   ds1307.getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);   // Get the current date/time
 
   if(hour==23 && minute==59 && door1Locked==false){
+      logger_state[0].event_from = "TIMER";
          doorLock(1);
          door1Locked==true;      
          logger.l1 = 1;
@@ -370,6 +395,9 @@ lcdStatus(2,door2Locked);
   if(reader1Count >= 26){                           //  When tag presented to reader1 (No keypad on this reader)
     logger.l1 = 1;
     logger.l2 = 1;
+    logger_state[0].current_reader = 1;
+    logger_state[0].current_tag = reader1;
+    logger_state[0].event_from = "USER";
     logAccess(logger,reader1);                       //  write log entry to serial port
 
 
@@ -380,6 +408,8 @@ lcdStatus(2,door2Locked);
 */
 
   userMask1=checkUser(reader1);    
+  logger_state[0].current_usermask = userMask1;
+  logger_state[0].current_door = 1;
 
   if(userMask1>=0) {    
     
@@ -460,6 +490,9 @@ lcdStatus(2,door2Locked);
 //Serial.println("DEBUG Reader2 setup");
   
   if(reader2Count >= 26){                                // Tag presented to reader 2
+    logger_state[1].current_tag = reader2;
+    logger_state[1].current_reader = 2;
+    logger_state[1].event_from = "USER";
     logger.l1 = 2;
     logger.l2 = 1;
     logAccess(logger,reader2);                            // Write log entry to serial port
@@ -467,7 +500,9 @@ lcdStatus(2,door2Locked);
                                                          // CHECK TAG IN OUR LIST OF USERS. -1 = no match                                  
   keypadGranted=false;                                   // Reset the keypad authorized variable
 
-  userMask2=checkUser(reader2);    
+  userMask2=checkUser(reader2);
+  logger_state[1].current_usermask = userMask2;
+  logger_state[1].current_door = 2;
 
   if(userMask2>=0){    
     switch(userMask2) {
@@ -516,6 +551,7 @@ lcdStatus(2,door2Locked);
     
     default:  
     {           
+        logger_state[1].current_door = 1;
          logger.l1 = 2;
 		 logger.l2 = 2;
 		 logAccess(logger,reader2);           // Log
@@ -535,6 +571,7 @@ Serial.println(keypadGranted);
     else 
     {                                             
      if(checkSuperuser(reader2) >= 0) {              // Check if a superuser, grant access.
+         logger_state[1].current_door = 1;
          logger.l1 = 1;
          logger.l2 = 2;
          logAccess(logger,reader2);                 // Log and unlock door 2
@@ -1034,7 +1071,7 @@ uint8_t dpLED=1;
   mcp.digitalWrite(dpLED, HIGH);
   logger.l1 = input;
   logger.l2 = 2;
-  logDoor(logger);
+  logDoor(logger, logger_state[1]);
   
 #ifdef LCDBOARD
   lcdStatus(input, false);
@@ -1060,7 +1097,7 @@ uint8_t dpLED=1;
   logger.l1 = input;
   logger.l2 = 1;
   logger.l3 = 0;
-  logDoor(logger);
+  logDoor(logger, logger_state[input-1]);
 #ifdef LCDBOARD
   lcdStatus(input, true);
 #endif  
