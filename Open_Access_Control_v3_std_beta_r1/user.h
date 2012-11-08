@@ -29,7 +29,7 @@
 #define VERSION 1.34
 #define UBAUDRATE 57600                 // Set the baud rate for the USB serial port
 
-#define josh   0xDA28AA                  // Name and badge number in HEX. We are not using checksums or site ID, just the whole
+#define josh   0x14F153A                  // Name and badge number in HEX. We are not using checksums or site ID, just the whole
 #define rhys   0x25AEBC6                  // output string from the reader.
 #define eric   0xD621AC
 #define tim    0x14F0C85

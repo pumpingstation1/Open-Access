@@ -776,6 +776,8 @@ Serial.println("DEBUG Reader2 end keypad");
 
 
 void runCommand(long command) {         // Run any commands entered at the pin pad.
+  Serial.print("<CMD> ");
+  Serial.println(command, HEX);
 
   switch(command) {                              
 
@@ -856,7 +858,17 @@ void runCommand(long command) {         // Run any commands entered at the pin p
       alarmState(1);
       break;  
     }
-
+  case 0x3519:
+    {
+      if(door1Locked) {
+        doorUnlock(1);
+        door1Locked=false;
+        chirpReader(2, 2);
+      } else {
+        doorLock(1);
+        chirpReader(3, 2);
+      }
+    }
   case 0x20: 
     {                                   // If command = 20, do nothing
       break;
